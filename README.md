@@ -61,13 +61,13 @@ Because the model file (`model.pkl`) exceeds GitHub's 100 MB file size limit, it
 1. Upload your generated `model/model.pkl` file to your Google Drive.
 2. Right-click the file, select **Share**, and change General Access to **"Anyone with the link"**.
 3. Copy the unique **File ID** from the generated link. 
-*(For example, if the link is `https://drive.google.com/file/d/1A2b3C4d5E/view`, the ID is `1A2b3C4d5E`)*.
+*(For example, if the link is `https://drive.google.com/file/d/1o63pfzG-3S8OBkcKerJdpDwsqo8eT8rP/view`, the ID is `1o63pfzG-3S8OBkcKerJdpDwsqo8eT8rP`)*.
 4. Open `app.py` in your code editor and replace the placeholder `YOUR_GOOGLE_DRIVE_FILE_ID` with your actual copied File ID.
 
 ### Step 2: Upload Code to GitHub
 Initialize your Git repository and upload the remaining files to a remote public GitHub repository you own. 
 
-The `.gitignore` has been pre-configured to ignore the massive `model.pkl` file so it won't crash your GitHub upload, but it **will** upload your other lightweight model files (`scaler.pkl`, `encoders.pkl`) and the `app.py` script.
+The `.gitignore` has been pre-configured to ignore the massive `model.pkl` file so it won't crash your GitHub upload, but it **will** upload your other lightweight model files (`scaler.pkl`, `encoders.pkl`,`metrices.pkl`) and the `app.py` script.
 
 ```bash
 # If you previously tried committing the large file, you MUST remove it from git's history before pushing:
