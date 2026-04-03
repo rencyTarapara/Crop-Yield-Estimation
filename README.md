@@ -14,6 +14,7 @@ project/
 │   ├── train.py                # Script to preprocess data and train the model
 │   ├── model.pkl               # Saved RandomForestRegressor model (generated)
 │   ├── scaler.pkl              # Saved StandardScaler object (generated)
+│   ├── metrics.pkl             # Saved metrics for accuracy and RMSE
 │   └── encoders.pkl            # Saved LabelEncoders for categorical data (generated)
 │
 ├── app.py                      # Streamlit frontend application
@@ -78,7 +79,7 @@ git init
 git add .
 git commit -m "Initial commit - Crop Yield Prediction"
 git branch -M main
-git remote add origin https://github.com/YOUR_USERNAME/YOUR_REPO_NAME.git
+git remote add origin https://github.com/Crop-Yield-Estimation.git
 git push -u origin main
 ```
 
@@ -91,3 +92,6 @@ git push -u origin main
 6. Click **Deploy!**
 
 Streamlit servers will systematically install all instances listed in `requirements.txt` and launch your project with a live globally accessible URL link!
+URL : https://crop-yield-estimation-u46pahzx5zpjqnjmjgzohs.streamlit.app
+Accuracy : 98.57
+RMSE : 10179
