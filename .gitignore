@@ -1,0 +1,22 @@
+# Environments
+venv/
+env/
+.env
+.venv/
+
+# Python Cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Jupyter Notebooks
+.ipynb_checkpoints/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Ignore the large model file for GitHub but keep scaler and encoders
+model/model.pkl
+model/train.py
