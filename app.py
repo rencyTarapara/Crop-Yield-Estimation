@@ -10,130 +10,125 @@ st.set_page_config(page_title="Crop Yield Prediction", page_icon="🌾", layout=
 
 # Paths
 base_dir = os.path.dirname(os.path.abspath(__file__))
-model_path = os.path.join(base_dir, 'model', 'model.pkl')
-scaler_path = os.path.join(base_dir, 'model', 'scaler.pkl')
-encoders_path = os.path.join(base_dir, 'model', 'encoders.pkl')
-metrics_path = os.path.join(base_dir, 'model', 'metrics.pkl')
+model_dir = os.path.join(base_dir, 'model')
+
+model_path = os.path.join(model_dir, 'model.pkl')
+scaler_path = os.path.join(model_dir, 'scaler.pkl')
+encoders_path = os.path.join(model_dir, 'encoders.pkl')
+metrics_path = os.path.join(model_dir, 'metrics.pkl')
 
 @st.cache_resource
 def load_models():
-    # If model doesn't exist, download it dynamically from Google Drive
-    if not os.path.exists(model_path):
-        import gdown
-        st.info("Downloading large model file from Google Drive... Please wait.")
-        # NOTE: The User must replace 'YOUR_GOOGLE_DRIVE_FILE_ID' below 
-        # with the exact file ID from their Google Drive shareable link!
-        file_id = '1o63pfzG-3S8OBkcKerJdpDwsqo8eT8rP'
-        url = f'https://drive.google.com/uc?id={file_id}'
-        
-        try:
-            os.makedirs(os.path.dirname(model_path), exist_ok=True)
-            gdown.download(url, model_path, quiet=False)
-        except Exception as e:
-            st.error(f"Error downloading model: {e}")
-            
-    if os.path.exists(model_path) and os.path.exists(scaler_path) and os.path.exists(encoders_path):
-        model = joblib.load(model_path)
-        scaler = joblib.load(scaler_path)
-        encoders = joblib.load(encoders_path)
-        
-        metrics = None
-        if os.path.exists(metrics_path):
-            metrics = joblib.load(metrics_path)
-            
+    os.makedirs(model_dir, exist_ok=True)
+
+    # Google Drive file IDs
+    FILES = {
+        "model": ("1o63pfzG-3S8OBkcKerJdpDwsqo8eT8rP", model_path),
+        # 👉 ADD YOUR FILE IDs BELOW
+        "scaler": ("YOUR_SCALER_FILE_ID", scaler_path),
+        "encoders": ("YOUR_ENCODERS_FILE_ID", encoders_path),
+        "metrics": ("YOUR_METRICS_FILE_ID", metrics_path),
+    }
+
+    # Download files if missing
+    for name, (file_id, path) in FILES.items():
+        if not os.path.exists(path) and "YOUR_" not in file_id:
+            try:
+                st.info(f"⬇️ Downloading {name}...")
+                url = f"https://drive.google.com/uc?id={file_id}"
+                gdown.download(url, path, quiet=False)
+            except Exception as e:
+                st.error(f"❌ Failed to download {name}: {e}")
+
+    # Load models
+    try:
+        if os.path.exists(model_path):
+            model = joblib.load(model_path)
+        else:
+            return None, None, None, None
+
+        scaler = joblib.load(scaler_path) if os.path.exists(scaler_path) else None
+        encoders = joblib.load(encoders_path) if os.path.exists(encoders_path) else None
+        metrics = joblib.load(metrics_path) if os.path.exists(metrics_path) else None
+
         return model, scaler, encoders, metrics
-    else:
+
+    except Exception as e:
+        st.error(f"❌ Error loading model files: {e}")
         return None, None, None, None
+
 
 model, scaler, encoders, metrics = load_models()
 
-# UI elements
+# UI
 st.title("🌾 Agricultural Crop Yield Prediction")
 st.markdown("""
 This application predicts **crop yield (hg/ha)** based on environmental and agricultural factors.
-Configure the parameters below and click predict to get a yield estimate.
+Configure the parameters below and click predict.
 """)
 
+# If model missing
 if model is None:
-    st.error("⚠️ Model files not found! Please ensure training has completed (`python model/train.py`).")
+    st.error("⚠️ Model not loaded! Please check Google Drive links.")
+    st.stop()
+
+# Sidebar
+st.sidebar.header("📊 Model Performance")
+
+if metrics:
+    st.sidebar.metric("R² Score", f"{metrics.get('r2_score',0)*100:.2f}%")
+    st.sidebar.metric("RMSE", f"{metrics.get('rmse',0):,.0f}")
 else:
-    # Sidebar for Model Accuracy
-    st.sidebar.header("📊 Model Performance")
-    if metrics:
-        accuracy = metrics.get('r2_score', 0) * 100
-        rmse = metrics.get('rmse', 0)
-        
-        st.sidebar.metric("Model Accuracy (R²)", f"{accuracy:.2f}%")
-        st.sidebar.metric("Evaluation Error (RMSE)", f"{rmse:,.0f}")
-        
-        st.sidebar.markdown("""
-        ---
-        **Note**: The accuracy represents how well the model explains the variance in crop yields.
-        """)
-    else:
-        st.sidebar.warning("Metrics not found. Please retrain the model.")
-    # Ensure encoders have the valid labels
+    st.sidebar.warning("No metrics available")
+
+# Encoders check
+if encoders:
     area_encoder = encoders.get('Area')
     item_encoder = encoders.get('Item')
-    
-    if area_encoder and item_encoder:
-        area_options = area_encoder.classes_
-        item_options = item_encoder.classes_
-    else:
-        area_options = []
-        item_options = []
-        st.error("Encoders missing expected features. Please retrain the model.")
-        
-    st.header("⚙️ Input Features")
-    
-    # Form layout
-    with st.container():
-        col1, col2 = st.columns(2)
-        with col1:
-            area = st.selectbox("🌍 Area (Country/Region)", area_options)
-            year = st.number_input("📅 Year", min_value=1990, max_value=2050, value=2013, step=1)
-            rain = st.number_input("🌧️ Average Rainfall (mm/year)", min_value=0.0, max_value=4000.0, value=1000.0, step=10.0)
-            
-        with col2:
-            item = st.selectbox("🌱 Item (Crop)", item_options)
-            temp = st.number_input("🌡️ Average Temperature (°C)", min_value=-10.0, max_value=50.0, value=20.0, step=0.1)
-            pesticides = st.number_input("🧪 Pesticides (tonnes)", min_value=0.0, max_value=500000.0, value=100.0, step=10.0)
-            
-    st.markdown("---")
-    
-    # Predict button logic
-    col_empty1, col_center, col_empty2 = st.columns([1, 2, 1])
-    with col_center:
-        predict_btn = st.button("🚀 Predict Yield", use_container_width=True)
-    
-    if predict_btn:
-        try:
-            # Prepare input data
-            area_encoded = area_encoder.transform([area])[0]
-            item_encoded = item_encoder.transform([item])[0]
-            
-            continuous_features = ['Year', 'average_rain_fall_mm_per_year', 'pesticides_tonnes', 'avg_temp']
-            
-            input_data = pd.DataFrame({
-                'Area': [area_encoded],
-                'Item': [item_encoded],
-                'Year': [year],
-                'average_rain_fall_mm_per_year': [rain],
-                'pesticides_tonnes': [pesticides],
-                'avg_temp': [temp]
-            })
-            
-            # Scale continuous features
-            input_data[continuous_features] = scaler.transform(input_data[continuous_features])
-            
-            # Predict
-            with st.spinner("Analyzing..."):
-                prediction = model.predict(input_data)[0]
-            
-            # Display Result
-            st.success("### 📊 Predicted Yield")
-            st.write(f"## {prediction:,.2f} hg/ha")
-            st.info("💡 **Formula Note**: The prediction is measured in Hectograms per Hectare (hg/ha).")
-            
-        except Exception as e:
-            st.error(f"An error occurred during prediction: {e}")
+
+    area_options = area_encoder.classes_ if area_encoder else []
+    item_options = item_encoder.classes_ if item_encoder else []
+else:
+    st.error("⚠️ Encoders missing! Upload encoders.pkl")
+    st.stop()
+
+# Inputs
+st.header("⚙️ Input Features")
+
+col1, col2 = st.columns(2)
+
+with col1:
+    area = st.selectbox("🌍 Area", area_options)
+    year = st.number_input("📅 Year", 1990, 2050, 2013)
+    rain = st.number_input("🌧️ Rainfall", 0.0, 4000.0, 1000.0)
+
+with col2:
+    item = st.selectbox("🌱 Crop", item_options)
+    temp = st.number_input("🌡️ Temperature", -10.0, 50.0, 20.0)
+    pesticides = st.number_input("🧪 Pesticides", 0.0, 500000.0, 100.0)
+
+# Predict
+if st.button("🚀 Predict Yield"):
+    try:
+        area_encoded = area_encoder.transform([area])[0]
+        item_encoded = item_encoder.transform([item])[0]
+
+        input_data = pd.DataFrame({
+            'Area': [area_encoded],
+            'Item': [item_encoded],
+            'Year': [year],
+            'average_rain_fall_mm_per_year': [rain],
+            'pesticides_tonnes': [pesticides],
+            'avg_temp': [temp]
+        })
+
+        if scaler:
+            input_data[['Year','average_rain_fall_mm_per_year','pesticides_tonnes','avg_temp']] = \
+                scaler.transform(input_data[['Year','average_rain_fall_mm_per_year','pesticides_tonnes','avg_temp']])
+
+        prediction = model.predict(input_data)[0]
+
+        st.success(f"🌾 Predicted Yield: {prediction:,.2f} hg/ha")
+
+    except Exception as e:
+        st.error(f"❌ Prediction failed: {e}")
