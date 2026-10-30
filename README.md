@@ -93,5 +93,5 @@ git push -u origin main
 
 Streamlit servers will systematically install all instances listed in `requirements.txt` and launch your project with a live globally accessible URL link!
 URL : https://crop-yield-estimation-u46pahzx5zpjqnjmjgzohs.streamlit.app
-Accuracy : 98.57
+R^2_Score : 98.57
 RMSE : 10179
